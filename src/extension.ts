@@ -1,34 +1,56 @@
 import * as vscode from 'vscode';
 import { ScansService } from './services/scans';
+import {
+	SimpleTreeViewProvider,
+	FindingsTreeProvider,
+	ScanStatusProvider,
+	DashboardWebViewProvider,
+} from './views/examples';
 
-class ScanItem extends vscode.TreeItem {
-	constructor() {
-		super('Run Scan', vscode.TreeItemCollapsibleState.None);
-		this.command = {
-			command: 'appsec-dinosaur.runScan',
-			title: 'Run Scan',
-		};
-		this.iconPath = new vscode.ThemeIcon('run');
-	}
-}
-
-class AppSecViewProvider implements vscode.TreeDataProvider<ScanItem> {
-	getTreeItem(element: ScanItem): vscode.TreeItem {
-		return element;
-	}
-
-	getChildren(): ScanItem[] {
-		return [new ScanItem()];
-	}
-}
+// (Old example classes removed - see ./views/examples.ts for modern patterns)
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('🦖 AppSec Dinosaur extension is now active!');
 
-	const provider = new AppSecViewProvider();
-	vscode.window.registerTreeDataProvider('appsec-dinosaur-view', provider);
-
 	const scansService = new ScansService();
+
+	// ========================================================================
+	// Register View Providers
+	// ========================================================================
+
+	// Example 1: Simple tree view with collapsible items
+	const simpleProvider = new SimpleTreeViewProvider();
+	vscode.window.registerTreeDataProvider(
+		'appsec-dinosaur-view',
+		simpleProvider,
+	);
+
+	// Example 2: Findings tree with icons and severity badges
+	const findingsProvider = new FindingsTreeProvider();
+	vscode.window.registerTreeDataProvider(
+		'appsec-dinosaur-findings',
+		findingsProvider,
+	);
+
+	// Example 3: Settings/Status tree with badges
+	const statusProvider = new ScanStatusProvider();
+	vscode.window.registerTreeDataProvider(
+		'appsec-dinosaur-settings',
+		statusProvider,
+	);
+
+	// Example 4: WebView dashboard
+	const dashboardProvider = new DashboardWebViewProvider(context.extensionUri);
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider(
+			DashboardWebViewProvider.viewType,
+			dashboardProvider,
+		),
+	);
+
+	// ========================================================================
+	// Register Commands
+	// ========================================================================
 
 	const runScanCommand = vscode.commands.registerCommand(
 		'appsec-dinosaur.runScan',
@@ -59,7 +81,61 @@ export function activate(context: vscode.ExtensionContext) {
 		},
 	);
 
-	context.subscriptions.push(runScanCommand);
+	const openFileCommand = vscode.commands.registerCommand(
+		'appsec-dinosaur.openFile',
+		(filePath: string, lineNumber?: number) => {
+			vscode.workspace.openTextDocument(filePath).then((doc) => {
+				vscode.window.showTextDocument(doc).then((editor) => {
+					if (lineNumber) {
+						const line = Math.max(0, lineNumber - 1);
+						editor.selection = new vscode.Selection(line, 0, line, 0);
+						editor.revealRange(
+							new vscode.Range(line, 0, line, 0),
+							vscode.TextEditorRevealType.InCenter,
+						);
+					}
+				});
+			});
+		},
+	);
+
+	const fixFindingCommand = vscode.commands.registerCommand(
+		'appsec-dinosaur.fixFinding',
+		(finding: any) => {
+			vscode.window.showInformationMessage(
+				'🦖 Feature: Fix finding (auto-remediation coming soon)',
+			);
+			// TODO: Implement auto-fix logic
+		},
+	);
+
+	const ignoreFindingCommand = vscode.commands.registerCommand(
+		'appsec-dinosaur.ignoreFinding',
+		(finding: any) => {
+			vscode.window.showInformationMessage(
+				'🦖 Feature: Ignore finding (add to allowlist)',
+			);
+			// TODO: Implement ignore/whitelist logic
+		},
+	);
+
+	const applyContextScoreCommand = vscode.commands.registerCommand(
+		'appsec-dinosaur.applyContextScore',
+		(finding: any) => {
+			vscode.window.showInformationMessage(
+				'🦖 Feature: Apply business context score',
+			);
+			// TODO: Implement business context scoring UI
+		},
+	);
+
+	context.subscriptions.push(
+		runScanCommand,
+		openFileCommand,
+		fixFindingCommand,
+		ignoreFindingCommand,
+		applyContextScoreCommand,
+	);
 }
 
 export function deactivate() {

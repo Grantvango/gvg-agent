@@ -21,8 +21,49 @@
 				"command": "appsec-dinosaur.runScan",
 				"title": "Run Scan",
 				"category": "AppSec Dinosaur"
+			},
+			{
+				"command": "appsec-dinosaur.openFile",
+				"title": "Open File",
+				"category": "AppSec Dinosaur"
+			},
+			{
+				"command": "appsec-dinosaur.fixFinding",
+				"title": "Fix Finding",
+				"category": "AppSec Dinosaur",
+				"icon": "$(check)"
+			},
+			{
+				"command": "appsec-dinosaur.ignoreFinding",
+				"title": "Ignore Finding",
+				"category": "AppSec Dinosaur",
+				"icon": "$(circle-slash)"
+			},
+			{
+				"command": "appsec-dinosaur.applyContextScore",
+				"title": "Apply Business Context Score",
+				"category": "AppSec Dinosaur"
 			}
 		],
+		"menus": {
+			"view/item/context": [
+				{
+					"command": "appsec-dinosaur.fixFinding",
+					"when": "viewItem == finding",
+					"group": "inline@1"
+				},
+				{
+					"command": "appsec-dinosaur.ignoreFinding",
+					"when": "viewItem == finding",
+					"group": "inline@2"
+				},
+				{
+					"command": "appsec-dinosaur.applyContextScore",
+					"when": "viewItem =~ /^finding-(critical|high)/",
+					"group": "1_modification"
+				}
+			]
+		},
 		"viewsContainers": {
 			"activitybar": [
 				{
@@ -36,7 +77,21 @@
 			"appsec-dinosaur-sidebar": [
 				{
 					"id": "appsec-dinosaur-view",
-					"name": "AppSec Dinosaur"
+					"name": "Scan Controls"
+				},
+				{
+					"id": "appsec-dinosaur-findings",
+					"name": "Findings",
+					"when": "false"
+				},
+				{
+					"id": "appsec-dinosaur-settings",
+					"name": "Settings"
+				},
+				{
+					"id": "appsec-dinosaur-dashboard",
+					"name": "Dashboard",
+					"type": "webview"
 				}
 			]
 		}
