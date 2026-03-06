@@ -1,143 +1,327 @@
 import * as vscode from 'vscode';
-import { ScansService } from './services/scans';
-import {
-	SimpleTreeViewProvider,
-	FindingsTreeProvider,
-	ScanStatusProvider,
-	DashboardWebViewProvider,
-} from './views/examples';
+import { VeracodeScanner } from './services/veracode.service';
+import { SnykScanner } from './services/snyk.service';
+import { WizScanner } from './services/wiz.service';
+import { VulnerabilityTreeDataProvider } from './views/vulnerabilities.provider';
+import { ScanControllerTreeDataProvider } from './views/scan-controller.provider';
+import { VulnerabilityDetailsPanel } from './views/vulnerability-details.panel';
+import { Vulnerability } from './types/vulnerabilities';
 
-// (Old example classes removed - see ./views/examples.ts for modern patterns)
+let vulnerabilityProvider: VulnerabilityTreeDataProvider;
+let scanControllerProvider: ScanControllerTreeDataProvider;
+let outputChannel: vscode.OutputChannel;
 
-export function activate(context: vscode.ExtensionContext) {
-	console.log('🦖 AppSec Dinosaur extension is now active!');
+export async function activate(context: vscode.ExtensionContext) {
+	console.log('🛡️ CodeWise security extension activated');
 
-	const scansService = new ScansService();
+	// Create output channel
+	outputChannel = vscode.window.createOutputChannel('CodeWise');
+	outputChannel.appendLine('CodeWise Security Extension Started');
 
-	// ========================================================================
-	// Register View Providers
-	// ========================================================================
+	// Initialize tree data providers
+	vulnerabilityProvider = new VulnerabilityTreeDataProvider();
+	scanControllerProvider = new ScanControllerTreeDataProvider();
 
-	// Example 1: Simple tree view with collapsible items
-	const simpleProvider = new SimpleTreeViewProvider();
+	// Register tree views
 	vscode.window.registerTreeDataProvider(
-		'appsec-dinosaur-view',
-		simpleProvider,
+		'codewise.scanController',
+		scanControllerProvider,
+	);
+	vscode.window.registerTreeDataProvider(
+		'codewise.vulnerabilities',
+		vulnerabilityProvider,
 	);
 
-	// Example 2: Findings tree with icons and severity badges
-	const findingsProvider = new FindingsTreeProvider();
-	vscode.window.registerTreeDataProvider(
-		'appsec-dinosaur-findings',
-		findingsProvider,
-	);
+	// Register commands
+	registerCommands(context);
 
-	// Example 3: Settings/Status tree with badges
-	const statusProvider = new ScanStatusProvider();
-	vscode.window.registerTreeDataProvider(
-		'appsec-dinosaur-settings',
-		statusProvider,
-	);
+	outputChannel.appendLine('✅ CodeWise initialized successfully');
+}
 
-	// Example 4: WebView dashboard
-	const dashboardProvider = new DashboardWebViewProvider(context.extensionUri);
+function registerCommands(context: vscode.ExtensionContext): void {
+	// Veracode scan command
 	context.subscriptions.push(
-		vscode.window.registerWebviewViewProvider(
-			DashboardWebViewProvider.viewType,
-			dashboardProvider,
+		vscode.commands.registerCommand('codewise.veracodeFullScan', async () => {
+			await runVeracodeScan();
+		}),
+	);
+
+	// Snyk scan command
+	context.subscriptions.push(
+		vscode.commands.registerCommand('codewise.snykFullScan', async () => {
+			await runSnykScan();
+		}),
+	);
+
+	// Wiz scan command
+	context.subscriptions.push(
+		vscode.commands.registerCommand('codewise.wizContainerScan', async () => {
+			await runWizScan();
+		}),
+	);
+
+	// Fix vulnerability command
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			'codewise.fixVulnerability',
+			async (vulnerability: Vulnerability) => {
+				await fixVulnerabilityWithCopilot(vulnerability);
+			},
 		),
 	);
 
-	// ========================================================================
-	// Register Commands
-	// ========================================================================
-
-	const runScanCommand = vscode.commands.registerCommand(
-		'appsec-dinosaur.runScan',
-		async () => {
-			const projectPath =
-				vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
-
-			if (!projectPath) {
-				vscode.window.showErrorMessage('No workspace folder found');
-				return;
-			}
-
-			try {
-				vscode.window.showInformationMessage('🦖 Starting security scan...');
-
-				// Call the scan service
-				const results = await scansService.runFullScan(projectPath);
-
-				console.log('Scan results:', results);
-				vscode.window.showInformationMessage(
-					`🦖 Scan complete! Found ${results.length} scan result(s)`,
-				);
-			} catch (error) {
-				const message =
-					error instanceof Error ? error.message : 'Unknown error';
-				vscode.window.showErrorMessage(`Scan failed: ${message}`);
-			}
-		},
-	);
-
-	const openFileCommand = vscode.commands.registerCommand(
-		'appsec-dinosaur.openFile',
-		(filePath: string, lineNumber?: number) => {
-			vscode.workspace.openTextDocument(filePath).then((doc) => {
-				vscode.window.showTextDocument(doc).then((editor) => {
-					if (lineNumber) {
-						const line = Math.max(0, lineNumber - 1);
-						editor.selection = new vscode.Selection(line, 0, line, 0);
-						editor.revealRange(
-							new vscode.Range(line, 0, line, 0),
-							vscode.TextEditorRevealType.InCenter,
-						);
-					}
-				});
-			});
-		},
-	);
-
-	const fixFindingCommand = vscode.commands.registerCommand(
-		'appsec-dinosaur.fixFinding',
-		(finding: any) => {
-			vscode.window.showInformationMessage(
-				'🦖 Feature: Fix finding (auto-remediation coming soon)',
-			);
-			// TODO: Implement auto-fix logic
-		},
-	);
-
-	const ignoreFindingCommand = vscode.commands.registerCommand(
-		'appsec-dinosaur.ignoreFinding',
-		(finding: any) => {
-			vscode.window.showInformationMessage(
-				'🦖 Feature: Ignore finding (add to allowlist)',
-			);
-			// TODO: Implement ignore/whitelist logic
-		},
-	);
-
-	const applyContextScoreCommand = vscode.commands.registerCommand(
-		'appsec-dinosaur.applyContextScore',
-		(finding: any) => {
-			vscode.window.showInformationMessage(
-				'🦖 Feature: Apply business context score',
-			);
-			// TODO: Implement business context scoring UI
-		},
-	);
-
+	// Ignore vulnerability command
 	context.subscriptions.push(
-		runScanCommand,
-		openFileCommand,
-		fixFindingCommand,
-		ignoreFindingCommand,
-		applyContextScoreCommand,
+		vscode.commands.registerCommand(
+			'codewise.ignoreVulnerability',
+			(vulnId: string) => {
+				vulnerabilityProvider.ignoreVulnerability(vulnId);
+				vscode.window.showInformationMessage(`Vulnerability ${vulnId} ignored`);
+			},
+		),
+	);
+
+	// View vulnerability details command
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			'codewise.viewVulnerabilityDetails',
+			async (vulnerability: Vulnerability) => {
+				VulnerabilityDetailsPanel.createOrShow(
+					context.extensionUri,
+					vulnerability,
+				);
+			},
+		),
+	);
+
+	// Refresh scans command
+	context.subscriptions.push(
+		vscode.commands.registerCommand('codewise.refreshScans', () => {
+			vscode.window.showInformationMessage('Refreshing scan results...');
+		}),
+	);
+
+	// Settings command
+	context.subscriptions.push(
+		vscode.commands.registerCommand('codewise.openSettings', () => {
+			vscode.commands.executeCommand(
+				'workbench.action.openSettings',
+				'codewise',
+			);
+		}),
 	);
 }
 
+async function runVeracodeScan(): Promise<void> {
+	scanControllerProvider.setScanStatus('veracode', 'scanning');
+
+	try {
+		const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+		if (!workspacePath) {
+			vscode.window.showErrorMessage('No workspace folder is open');
+			return;
+		}
+
+		// Show progress notification
+		await vscode.window.withProgress(
+			{
+				location: vscode.ProgressLocation.Notification,
+				title: 'Veracode SAST/SCA Scan',
+				cancellable: true,
+			},
+			async (progress) => {
+				progress.report({ increment: 0 });
+
+				const scanner = new VeracodeScanner(outputChannel);
+				const result = await scanner.scan(workspacePath);
+
+				progress.report({ increment: 50, message: 'Processing results...' });
+
+				vulnerabilityProvider.addScanResult(result);
+				scanControllerProvider.setScanStatus('veracode', 'completed');
+
+				progress.report({ increment: 100 });
+
+				vscode.window.showInformationMessage(
+					`✅ Veracode scan completed: ${result.summary.total} vulnerabilities found`,
+				);
+				outputChannel.show();
+			},
+		);
+	} catch (error) {
+		scanControllerProvider.setScanStatus('veracode', 'failed');
+		vscode.window.showErrorMessage(`❌ Veracode scan failed: ${error}`);
+		outputChannel.appendLine(`Error: ${error}`);
+	}
+}
+
+async function runSnykScan(): Promise<void> {
+	scanControllerProvider.setScanStatus('snyk', 'scanning');
+
+	try {
+		const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+		if (!workspacePath) {
+			vscode.window.showErrorMessage('No workspace folder is open');
+			return;
+		}
+
+		await vscode.window.withProgress(
+			{
+				location: vscode.ProgressLocation.Notification,
+				title: 'Snyk SAST/SCA Scan',
+				cancellable: true,
+			},
+			async (progress) => {
+				progress.report({ increment: 0 });
+
+				const scanner = new SnykScanner(outputChannel);
+				const result = await scanner.scan(workspacePath);
+
+				progress.report({ increment: 50, message: 'Processing results...' });
+
+				vulnerabilityProvider.addScanResult(result);
+				scanControllerProvider.setScanStatus('snyk', 'completed');
+
+				progress.report({ increment: 100 });
+
+				vscode.window.showInformationMessage(
+					`✅ Snyk scan completed: ${result.summary.total} vulnerabilities found`,
+				);
+				outputChannel.show();
+			},
+		);
+	} catch (error) {
+		scanControllerProvider.setScanStatus('snyk', 'failed');
+		vscode.window.showErrorMessage(`❌ Snyk scan failed: ${error}`);
+		outputChannel.appendLine(`Error: ${error}`);
+	}
+}
+
+async function runWizScan(): Promise<void> {
+	scanControllerProvider.setScanStatus('wiz', 'scanning');
+
+	try {
+		// Prompt for image name
+		const imageName = await vscode.window.showInputBox({
+			prompt: 'Enter container image name (e.g., ubuntu:20.04, myapp:latest)',
+			placeHolder: 'ubuntu:20.04',
+		});
+
+		if (!imageName) {
+			scanControllerProvider.setScanStatus('wiz', 'idle');
+			return;
+		}
+
+		await vscode.window.withProgress(
+			{
+				location: vscode.ProgressLocation.Notification,
+				title: `Wiz Container Scan: ${imageName}`,
+				cancellable: true,
+			},
+			async (progress) => {
+				progress.report({ increment: 0 });
+
+				const scanner = new WizScanner(outputChannel);
+				const result = await scanner.scan(imageName);
+
+				progress.report({ increment: 50, message: 'Processing results...' });
+
+				vulnerabilityProvider.addScanResult(result);
+				scanControllerProvider.setScanStatus('wiz', 'completed');
+
+				progress.report({ increment: 100 });
+
+				vscode.window.showInformationMessage(
+					`✅ Wiz scan completed for ${imageName}: ${result.summary.total} vulnerabilities found`,
+				);
+				outputChannel.show();
+			},
+		);
+	} catch (error) {
+		scanControllerProvider.setScanStatus('wiz', 'failed');
+		vscode.window.showErrorMessage(`❌ Wiz scan failed: ${error}`);
+		outputChannel.appendLine(`Error: ${error}`);
+	}
+}
+
+async function fixVulnerabilityWithCopilot(
+	vulnerability: Vulnerability,
+): Promise<void> {
+	const message = `🪄 Attempting to fix ${vulnerability.title} with Copilot...`;
+	vscode.window.showInformationMessage(message);
+
+	outputChannel.appendLine(`\n[COPILOT FIX] ${vulnerability.title}`);
+	outputChannel.appendLine(`ID: ${vulnerability.id}`);
+	outputChannel.appendLine(`Description: ${vulnerability.description}`);
+	if (vulnerability.recommendation) {
+		outputChannel.appendLine(`Recommendation: ${vulnerability.recommendation}`);
+	}
+
+	// Build Copilot prompt
+	const copilotPrompt = buildCopilotPrompt(vulnerability);
+	outputChannel.appendLine(`\nCopilot Prompt:\n${copilotPrompt}`);
+
+	// Try to trigger Copilot inline chat
+	try {
+		// Open inline chat with the vulnerability details
+		await vscode.commands.executeCommand(
+			'github.copilot.openSymbolFromReferences',
+			null,
+			null,
+			null,
+		);
+
+		// Alternative: Try to use the copilot.chat.open command if it exists
+		try {
+			await vscode.commands.executeCommand('workbench.action.openUnifiedFind');
+		} catch (e) {
+			// Command may not exist in all versions
+		}
+
+		vscode.window.showInformationMessage(
+			`Copilot should open. Please use the following prompt to fix the vulnerability:\n\n${copilotPrompt}`,
+		);
+	} catch (error) {
+		// Show the prompt to the user directly
+		const fixPrompt = `Use GitHub Copilot to fix the following security vulnerability:\n\n${copilotPrompt}`;
+		vscode.window.showInformationMessage(fixPrompt);
+	}
+
+	outputChannel.show();
+}
+
+function buildCopilotPrompt(vulnerability: Vulnerability): string {
+	let prompt = `Fix the following security vulnerability:\n\n`;
+	prompt += `Title: ${vulnerability.title}\n`;
+	prompt += `Severity: ${vulnerability.severity}\n`;
+	prompt += `Description: ${vulnerability.description}\n`;
+
+	if (vulnerability.cwe) {
+		prompt += `CWE: ${vulnerability.cwe}\n`;
+	}
+
+	if (vulnerability.cveId) {
+		prompt += `CVE: ${vulnerability.cveId}\n`;
+	}
+
+	if (vulnerability.filePath && vulnerability.lineNumber) {
+		prompt += `Location: ${vulnerability.filePath}:${vulnerability.lineNumber}\n`;
+	}
+
+	if (vulnerability.recommendation) {
+		prompt += `Recommendation: ${vulnerability.recommendation}\n`;
+	}
+
+	prompt += `\nPlease provide code changes to remediate this vulnerability. Consider:\n`;
+	prompt += `- Security best practices\n`;
+	prompt += `- Code quality and maintainability\n`;
+	prompt += `- Minimal impact on existing functionality\n`;
+	prompt += `- Proper error handling\n`;
+
+	return prompt;
+}
+
 export function deactivate() {
-	console.log('🦖 AppSec Dinosaur extension deactivated');
+	console.log('🛡️ CodeWise security extension deactivated');
+	outputChannel.dispose();
 }

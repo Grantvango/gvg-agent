@@ -1,53 +1,310 @@
-# Quick Start Guide - AppSec Dinosaur
+# CodeWise Quick Start Guide
 
-Welcome to AppSec Dinosaur! 🦖 This guide gets you up and running in 5 minutes.
+Welcome to CodeWise! 🛡️ Get up and running with unified security scanning in 5 minutes.
 
 ## Installation
 
-### Option 1: From Marketplace (When Available)
+### From VS Code Marketplace
 
-- Open VS Code Extensions (`Cmd+Shift+X`)
-- Search: "AppSec Dinosaur"
-- Click Install
+1. Open VS Code
+2. Go to Extensions (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+3. Search for "CodeWise"
+4. Click **Install**
+5. Reload VS Code
 
-### Option 2: From Source
+### From Source (Development)
 
 ```bash
-cd /path/to/appsec-dinosaur
+cd /path/to/codewise
 npm install
 npm run compile
 # Press F5 to launch in debug extension host
 ```
 
-## First Run
+## First Run - 5 Minutes to Your First Scan
 
-### Quick Test (30 seconds)
+### Step 1: Configure API Credentials (2 minutes)
 
-1. Open command palette: `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
-2. Type: "AppSec Dinosaur: Tool Status"
-3. Press Enter
-4. View available tools in the output channel
+CodeWise needs API credentials for the security scanners. You can skip this and use demo data.
 
-### Run Your First Scan (2 minutes)
+**Option A: Demo Mode (No Setup Needed)**
 
-1. Open command palette: `Cmd+Shift+P`
-2. Type: "AppSec Dinosaur: Select Tool"
-3. Choose a tool (e.g., "npm audit")
-4. Select "No" for business context (optional)
-5. Wait for results in output channel
+- Leave settings blank to use built-in example vulnerabilities
 
-### Enable Business Context (1 minute)
+**Option B: Use Real APIs**
 
-1. Run a tool (see above)
-2. When prompted "Apply business context scoring?" → Select "Yes"
-3. Results will include:
-   - Business Risk Scores (0-100)
-   - Urgency Levels (IMMEDIATE, HIGH, MEDIUM, LOW)
-   - Contextual Recommendations
+1. Open VS Code Settings (`Ctrl+,` / `Cmd+,`)
+2. Search for "codewise"
+3. Configure at least one scanner:
 
-## Commands Reference
+```
+codewise.veracode.enabled: true
+codewise.veracode.apiId: YOUR_API_ID
+codewise.veracode.apiSecret: YOUR_API_SECRET
+```
 
-### Main Commands
+Or:
+
+```
+codewise.snyk.enabled: true
+codewise.snyk.apiToken: YOUR_API_TOKEN
+```
+
+Or:
+
+```
+codewise.wiz.enabled: true
+codewise.wiz.clientId: YOUR_CLIENT_ID
+codewise.wiz.clientSecret: YOUR_CLIENT_SECRET
+```
+
+### Step 2: Open a Project (30 seconds)
+
+1. Open any project folder in VS Code
+2. Click the **CodeWise icon** in the Activity Bar (left sidebar)
+   - It looks like a shield: `🛡️`
+
+### Step 3: Run Your First Scan (1 minute)
+
+1. In the CodeWise sidebar, you'll see "Scan Controls"
+2. Click any button:
+   - **Veracode (SAST/SCA)** 🔍 - Scans source code
+   - **Snyk (SAST/SCA)** 🐍 - Scans dependencies
+   - **Wiz (Container/Image)** 📦 - Scans container images
+
+3. For Wiz, you'll be prompted to enter a container image name:
+
+   ```
+   ubuntu:20.04
+   myapp:latest
+   python:3.9-slim
+   ```
+
+4. Wait for the scan to complete (watch the progress notification)
+
+### Step 4: View Vulnerabilities (1 minute)
+
+1. Scans complete → vulnerabilities appear in **Vulnerabilities** panel
+2. Expand by **Scanner**: Veracode, Snyk, or Wiz
+3. Expand by **Severity**: CRITICAL, HIGH, MEDIUM, LOW, INFO
+4. Click any vulnerability to see details
+
+### Step 5: Fix a Vulnerability with Copilot (1 minute)
+
+**Prerequisites**: Install [GitHub Copilot Extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot)
+
+1. Click any vulnerability to open details panel
+2. Click **Fix with Copilot** button
+3. GitHub Copilot will open with a detailed prompt
+4. Use Copilot to generate a fix
+5. Review and apply the suggested code
+
+## Common Tasks
+
+### View Scan Results
+
+```
+CodeWise Sidebar
+├─ Scan Controls (buttons to trigger scans)
+└─ Vulnerabilities (organized results)
+    ├─ VERACODE (6 vulns)
+    │  ├─ CRITICAL (1)
+    │  ├─ HIGH (2)
+    │  ├─ MEDIUM (2)
+    │  └─ LOW (1)
+    ├─ SNYK (5 vulns)
+    │  ├─ CRITICAL (0)
+    │  ├─ HIGH (2)
+    │  └─ MEDIUM (3)
+    └─ WIZ (8 vulns)
+       ├─ CRITICAL (2)
+       ├─ HIGH (3)
+       ├─ MEDIUM (2)
+       └─ LOW (1)
+```
+
+### Ignore a Vulnerability
+
+1. Right-click vulnerability
+2. Select "Ignore Vulnerability"
+3. Vulnerability moves to ignored section
+4. Re-enable in settings if needed
+
+### View Vulnerability Details
+
+Click on any vulnerability to see:
+
+- **Title & Severity** with color-coded badge
+- **CWE & CVE IDs** for reference
+- **Description** - what the vulnerability is
+- **Location** - file and line number
+- **Recommendation** - how to fix it
+- **References** - links to CVE/CWE databases
+- **Actions** - Fix with Copilot or Ignore
+
+### Run Multiple Scans
+
+Click scan buttons in any order:
+
+```
+✓ Run Veracode →  6 vulnerabilities found
+✓ Run Snyk →     5 vulnerabilities found
+✓ Run Wiz →      8 vulnerabilities found
+```
+
+All results accumulate in the Vulnerabilities view. Organize by severity to prioritize fixes.
+
+## Example Workflow
+
+### Scenario: Fix Top Security Issues
+
+**Goal**: Fix all CRITICAL vulnerabilities in your code
+
+1. **Scan with Veracode**
+   - Click "Scan with Veracode (SAST/SCA)"
+   - Wait for results
+
+2. **Filter by Severity**
+   - Look in Vulnerabilities panel
+   - Expand "CRITICAL" section
+   - See 1 SQL Injection vulnerability
+
+3. **View Details**
+   - Click on "SQL Injection" vulnerability
+   - Read description and recommendation
+   - See file location: `src/services/database.service.ts:45`
+
+4. **Fix with Copilot**
+   - Click "🪄 Fix with Copilot" button
+   - GitHub Copilot opens with prompt
+   - Copilot suggests using parameterized queries
+   - Accept and apply the fix
+
+5. **Verify**
+   - Re-run Veracode scan
+   - SQL Injection should disappear from results
+
+6. **Continue**
+   - Repeat for next CRITICAL vulnerabilities
+   - Then move to HIGH severity issues
+
+## Keyboard Shortcuts
+
+| Action                | Mac                          | Windows/Linux                |
+| --------------------- | ---------------------------- | ---------------------------- |
+| Open CodeWise Sidebar | `Cmd+Shift+X` then click     | `Ctrl+Shift+X` then click    |
+| Focus Activity Bar    | `Cmd+0`                      | `Ctrl+0`                     |
+| Open Command Palette  | `Cmd+Shift+P`                | `Ctrl+Shift+P`               |
+| Run All Scans         | No shortcut (use UI buttons) | No shortcut (use UI buttons) |
+
+## Tips & Tricks
+
+### 💡 Use Demo Mode First
+
+- Don't have API credentials? No problem!
+- Leave settings blank to see example vulnerabilities
+- Great for learning CodeWise features
+
+### 💡 Run Scans Incrementally
+
+- Run Veracode first (SAST)
+- Then Snyk (dependencies)
+- Then Wiz (containers)
+- Compare results across scanners
+
+### 💡 Check Output Channel
+
+- Open Output panel (`Cmd+J`)
+- Select "CodeWise" from dropdown
+- See detailed logs of each scan
+- Useful for debugging issues
+
+### 💡 Leverage Copilot
+
+- Have GitHub Copilot installed
+- Each vulnerability has Copilot-optimized prompt
+- Copilot can suggest context-aware fixes
+- Review fixes before applying
+
+## Troubleshooting
+
+### Scans Not Running?
+
+1. **Check workspace**: Is a folder open in VS Code?
+2. **Check credentials**: Do you have valid API keys? (or use demo mode)
+3. **Check output**: Open CodeWise output channel for error details
+4. **Check network**: Do you have internet access?
+
+### No Vulnerabilities Found?
+
+- API credentials may be invalid
+- Project may be clean (unlikely, run demo!)
+- Try running the scan again
+- Check output channel for errors
+
+### Copilot Not Working?
+
+- Install GitHub Copilot extension
+- Have active Copilot subscription
+- Check your VS Code version (1.100.0+)
+
+## Next Steps
+
+### Learn More
+
+- Read full [README.md](README.md) for complete documentation
+- Check security platform docs:
+  - [Veracode](https://www.veracode.com/docs)
+  - [Snyk](https://docs.snyk.io/)
+  - [Wiz](https://docs.wiz.io/)
+
+### Get API Credentials
+
+**Veracode**
+
+- Sign up at https://www.veracode.com/
+- Account → API Credentials → Generate
+
+**Snyk**
+
+- Sign up at https://snyk.io/
+- Settings → API Token → Copy
+
+**Wiz**
+
+- Sign up at https://www.wiz.io/
+- Settings → API Tokens → Generate
+
+### Configure Your Workspace
+
+Add a `.codewise.json` to your project root (optional):
+
+```json
+{
+	"ignoreVulnerabilities": ["veracode-VC005", "snyk-npm:lodash:20160406"],
+	"maxSeverityToFix": "HIGH",
+	"autoFixWithCopilot": false
+}
+```
+
+## Support
+
+**Having trouble?**
+
+1. Check this Quick Start again
+2. Read [README.md](README.md) for detailed docs
+3. Check CodeWise Output Channel for errors
+4. Verify API credentials and network connectivity
+
+**Found a bug?**
+
+- File an issue on GitHub: https://github.com/evm-dsoar/codewise/issues
+
+---
+
+**Questions?**: See [README.md](README.md) or the CodeWise documentation.
+
+**Version**: 1.0.0 | **Made by**: EVM DSOAR
 
 | Keyboard      | Command                     | Purpose                     |
 | ------------- | --------------------------- | --------------------------- |

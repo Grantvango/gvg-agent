@@ -1,99 +1,214 @@
 {
-	"name": "appsec-dinosaur",
-	"displayName": "AppSec Dinosaur",
-	"description": "A simple AppSec extension",
-	"version": "0.0.1",
+	"name": "codewise",
+	"displayName": "CodeWise",
+	"description": "Unified security scanning extension for Veracode, Snyk, and Wiz with AI-powered vulnerability fixes",
+	"version": "1.0.0",
+	"publisher": "EVM-DSOAR",
+	"license": "MIT",
 	"engines": {
-		"vscode": "^1.109.0"
+		"vscode": "^1.100.0"
 	},
 	"categories": [
+		"Security",
+		"Linters",
 		"Other"
 	],
+	"keywords": [
+		"security",
+		"vulnerabilities",
+		"scanning",
+		"veracode",
+		"snyk",
+		"wiz",
+		"sast",
+		"sca",
+		"container",
+		"copilot",
+		"ai"
+	],
 	"icon": "assets/dinosaur.png",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/evm-dsoar/codewise"
+	},
 	"activationEvents": [
-		"onView:appsec-dinosaur-view",
-		"onCommand:appsec-dinosaur.runScan"
+		"onView:codewise.scanController",
+		"onView:codewise.vulnerabilities",
+		"onCommand:codewise.veracodeFullScan",
+		"onCommand:codewise.snykFullScan",
+		"onCommand:codewise.wizContainerScan"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "appsec-dinosaur.runScan",
-				"title": "Run Scan",
-				"category": "AppSec Dinosaur"
+				"command": "codewise.veracodeFullScan",
+				"title": "Scan with Veracode (SAST/SCA)",
+				"category": "CodeWise",
+				"icon": "$(shield)"
 			},
 			{
-				"command": "appsec-dinosaur.openFile",
-				"title": "Open File",
-				"category": "AppSec Dinosaur"
+				"command": "codewise.snykFullScan",
+				"title": "Scan with Snyk (SAST/SCA)",
+				"category": "CodeWise",
+				"icon": "$(shield)"
 			},
 			{
-				"command": "appsec-dinosaur.fixFinding",
-				"title": "Fix Finding",
-				"category": "AppSec Dinosaur",
-				"icon": "$(check)"
+				"command": "codewise.wizContainerScan",
+				"title": "Scan with Wiz (Container/Image)",
+				"category": "CodeWise",
+				"icon": "$(package)"
 			},
 			{
-				"command": "appsec-dinosaur.ignoreFinding",
-				"title": "Ignore Finding",
-				"category": "AppSec Dinosaur",
+				"command": "codewise.fixVulnerability",
+				"title": "Fix with Copilot",
+				"category": "CodeWise",
+				"icon": "$(wand)"
+			},
+			{
+				"command": "codewise.ignoreVulnerability",
+				"title": "Ignore Vulnerability",
+				"category": "CodeWise",
 				"icon": "$(circle-slash)"
 			},
 			{
-				"command": "appsec-dinosaur.applyContextScore",
-				"title": "Apply Business Context Score",
-				"category": "AppSec Dinosaur"
+				"command": "codewise.viewVulnerabilityDetails",
+				"title": "View Details",
+				"category": "CodeWise"
+			},
+			{
+				"command": "codewise.refreshScans",
+				"title": "Refresh Results",
+				"category": "CodeWise",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "codewise.openSettings",
+				"title": "Settings",
+				"category": "CodeWise",
+				"icon": "$(gear)"
 			}
 		],
 		"menus": {
+			"view/title": [
+				{
+					"command": "codewise.veracodeFullScan",
+					"when": "view == codewise.scanController",
+					"group": "navigation@1"
+				},
+				{
+					"command": "codewise.snykFullScan",
+					"when": "view == codewise.scanController",
+					"group": "navigation@2"
+				},
+				{
+					"command": "codewise.wizContainerScan",
+					"when": "view == codewise.scanController",
+					"group": "navigation@3"
+				},
+				{
+					"command": "codewise.refreshScans",
+					"when": "view == codewise.vulnerabilities",
+					"group": "navigation@1"
+				}
+			],
 			"view/item/context": [
 				{
-					"command": "appsec-dinosaur.fixFinding",
-					"when": "viewItem == finding",
+					"command": "codewise.fixVulnerability",
+					"when": "viewItem =~ /vulnerability/",
 					"group": "inline@1"
 				},
 				{
-					"command": "appsec-dinosaur.ignoreFinding",
-					"when": "viewItem == finding",
+					"command": "codewise.ignoreVulnerability",
+					"when": "viewItem =~ /vulnerability/",
 					"group": "inline@2"
 				},
 				{
-					"command": "appsec-dinosaur.applyContextScore",
-					"when": "viewItem =~ /^finding-(critical|high)/",
-					"group": "1_modification"
+					"command": "codewise.viewVulnerabilityDetails",
+					"when": "viewItem =~ /vulnerability/",
+					"group": "1_info"
 				}
 			]
 		},
 		"viewsContainers": {
 			"activitybar": [
 				{
-					"id": "appsec-dinosaur-sidebar",
-					"title": "AppSec Dinosaur",
-					"icon": "assets/dinosaur.png"
+					"id": "codewise-sidebar",
+					"title": "CodeWise Security",
+					"icon": "$(shield-alt)"
 				}
 			]
 		},
 		"views": {
-			"appsec-dinosaur-sidebar": [
+			"codewise-sidebar": [
 				{
-					"id": "appsec-dinosaur-view",
-					"name": "Scan Controls"
+					"id": "codewise.scanController",
+					"name": "Scan Controls",
+					"type": "tree"
 				},
 				{
-					"id": "appsec-dinosaur-findings",
-					"name": "Findings",
-					"when": "false"
+					"id": "codewise.vulnerabilities",
+					"name": "Vulnerabilities",
+					"type": "tree",
+					"visibility": "visible"
 				},
 				{
-					"id": "appsec-dinosaur-settings",
-					"name": "Settings"
-				},
-				{
-					"id": "appsec-dinosaur-dashboard",
-					"name": "Dashboard",
+					"command": "codewise.openSettings",
+					"id": "codewise.settings",
+					"name": "Settings",
 					"type": "webview"
 				}
 			]
+		},
+		"configuration": {
+			"title": "CodeWise",
+			"properties": {
+				"codewise.veracode.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable Veracode scanning"
+				},
+				"codewise.veracode.apiId": {
+					"type": "string",
+					"default": "",
+					"description": "Veracode API ID"
+				},
+				"codewise.veracode.apiSecret": {
+					"type": "string",
+					"default": "",
+					"description": "Veracode API Secret"
+				},
+				"codewise.snyk.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable Snyk scanning"
+				},
+				"codewise.snyk.apiToken": {
+					"type": "string",
+					"default": "",
+					"description": "Snyk API Token"
+				},
+				"codewise.wiz.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable Wiz container scanning"
+				},
+				"codewise.wiz.clientId": {
+					"type": "string",
+					"default": "",
+					"description": "Wiz Client ID"
+				},
+				"codewise.wiz.clientSecret": {
+					"type": "string",
+					"default": "",
+					"description": "Wiz Client Secret"
+				},
+				"codewise.copilot.autoFix": {
+					"type": "boolean",
+					"default": false,
+					"description": "Auto-fix vulnerabilities with Copilot when possible"
+				}
+			}
 		}
 	},
 	"scripts": {
@@ -102,10 +217,15 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
 		"lint": "eslint src",
-		"test": "vscode-test"
+		"test": "vscode-test",
+		"package": "vsce package",
+		"publish": "vsce publish"
+	},
+	"dependencies": {
+		"axios": "^1.7.2"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.109.0",
+		"@types/vscode": "^1.100.0",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "22.x",
 		"typescript-eslint": "^8.56.1",
